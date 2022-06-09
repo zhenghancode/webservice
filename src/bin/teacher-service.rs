@@ -5,16 +5,17 @@ use dotenv::dotenv;
 use std::env;
 use sqlx::postgres::PgPoolOptions;
 
-
-#[path ="../db_access.rs"]
-mod db_access;
-#[path = "../handlers.rs"]
+#[path ="../errors.rs"]
+mod errors;
+#[path ="../dbaccess/mod.rs"]
+mod dbaccess;
+#[path = "../handlers/mod.rs"]
 mod handlers;
 #[path = "../routers.rs"]
 mod routers;
 #[path = "../state.rs"]
 mod state;
-#[path ="../models.rs"]
+#[path ="../models/mod.rs"]
 mod models;
 
 use routers::*;
