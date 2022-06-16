@@ -59,5 +59,5 @@ async fn main() -> io::Result<()> {
             .configure(teacher_routes)
     };
 
-    HttpServer::new(app).bind("localhost:3000")?.run().await
+    HttpServer::new(app).bind("0.0.0.0:3000")?.run().await
 }

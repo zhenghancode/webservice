@@ -1,6 +1,6 @@
 FROM alpine:latest
 
-ENV DATABASE_URL=postgres://postgres:ZH123as456@han1:5432/zh
+ENV DATABASE_URL=postgres://postgres:ZH123as456@172.29.111.218:5432/zh
 
 WORKDIR /app
 

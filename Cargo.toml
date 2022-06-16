@@ -24,3 +24,6 @@ sqlx = {version = "0.5.10",default-features = false,features = [
 
 [[bin]]
 name = "teacher-service"
+
+[profile.release]
+lto = true
