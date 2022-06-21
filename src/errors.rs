@@ -9,6 +9,7 @@ pub enum MyError {
     ActixError(String),
     NotFound(String),
     InvalidInput(String),
+    Unauthored(String),
 }
 
 #[derive(Debug,Serialize)]
@@ -21,20 +22,24 @@ impl MyError {
     fn error_response(&self) -> String {
         match self {
             MyError::DBError(msg) => {
-                println!("Database error occurred: {msg}");
+                log::error!("Database error occurred: {msg}");
                 "Database error".into()
             },
             MyError::ActixError(msg) => {
-                println!("Server error occurred: {msg}");
+                log::error!("Server error occurred: {msg}");
                 "Internal server error".into()
             },
             MyError::NotFound(msg) => {
-                println!("Not found error occurred: {msg}");
+                log::error!("Not found error occurred: {msg}");
                 msg.into()
             },
             MyError::InvalidInput(msg) => {
-                println!("invalid parameters received: {msg}");
+                log::error!("invalid parameters received: {msg}");
                 msg.into()
+            },
+            MyError::Unauthored(msg) => {
+                log::error!("unauthor error occurred: {msg}");
+                "authorition error".into()
             },
         }
     }
@@ -46,6 +51,7 @@ impl error::ResponseError for MyError {
             MyError::DBError(_) | MyError::ActixError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             MyError::NotFound(_) => StatusCode::NOT_FOUND,
             MyError::InvalidInput(_) => StatusCode::BAD_REQUEST,
+            MyError::Unauthored(_) => StatusCode::UNAUTHORIZED,
         }
     }
 

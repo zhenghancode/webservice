@@ -1,6 +1,7 @@
-FROM alpine:latest
+FROM centos:latest
 
 ENV DATABASE_URL=postgres://postgres:ZH123as456@172.29.111.218:5432/zh
+ENV DOMAIN=zhenghan.icu
 
 WORKDIR /app
 

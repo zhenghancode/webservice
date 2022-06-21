@@ -1,5 +1,6 @@
 use actix_cors::Cors;
-use actix_web::{web,App,HttpServer, http};
+use actix_web::{web,App,HttpServer, http,middleware};
+use actix_identity::{IdentityService,CookieIdentityPolicy};
 use std::io;
 use std::sync::Mutex;
 use dotenv::dotenv;
@@ -18,10 +19,13 @@ mod routers;
 mod state;
 #[path ="../models/mod.rs"]
 mod models;
+#[path ="../utils.rs"]
+mod utils;
 
 use routers::*;
 use state::AppState;
 use errors::MyError;
+use utils::SECRET_KEY;
 
 
 #[actix_rt::main]
@@ -29,6 +33,8 @@ async fn main() -> io::Result<()> {
     dotenv().ok();
 
     let database_url = env::var("DATABASE_URL").expect("DATABASE_URL is not exist!");
+    let domain = env::var("DOMAIN").unwrap_or_else(|_| "zhenghan.icu".into());
+
     let db_pool = PgPoolOptions::new().connect(&database_url).await.unwrap();
 
     let shared_data= web::Data::new(AppState {
@@ -48,15 +54,32 @@ async fn main() -> io::Result<()> {
             .allowed_header(http::header::CONTENT_TYPE)
             .max_age(3600);
 
+        let identity = IdentityService::new(
+            CookieIdentityPolicy::new(SECRET_KEY.as_bytes())
+                .domain(&domain)
+                .name("auth")
+                .path("/")
+                .max_age(time::Duration::days(1))
+                .login_deadline(time::Duration::days(1))
+                .secure(false), // this can only be true if you have https
+        );
+
         App::new()
             .app_data(shared_data.clone())
-            .app_data(web::JsonConfig::default().error_handler(|_err,_req|{
+            .wrap(middleware::Logger::default())
+            .wrap(identity)
+            .wrap(middleware::DefaultHeaders::new().add(("X-Version","1.0")))
+            .app_data(web::JsonConfig::default().limit(4096).error_handler(|_err,_req|{
                 MyError::InvalidInput("Please provide valid Json input".to_string()).into()
             }))
             .wrap(cors)
-            .configure(general_routes)
-            .configure(course_routes)
-            .configure(teacher_routes)
+            .service(web::scope("/apiv1")
+                .configure(auth_routes)
+                .configure(general_routes)
+                .configure(course_routes)
+                .configure(teacher_routes)
+            )
+            
     };
 
     HttpServer::new(app).bind("0.0.0.0:3000")?.run().await

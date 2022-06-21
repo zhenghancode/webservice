@@ -1,7 +1,7 @@
 use crate::state::AppState;
-use actix_web::{web, HttpResponse};
+use actix_web::{web, HttpResponse,get};
 
-
+#[get("/health")]
 pub async fn health_check_hanlder(
     app_state: web::Data<AppState>
 ) -> HttpResponse {
