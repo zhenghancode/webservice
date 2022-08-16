@@ -58,6 +58,10 @@ async fn main() -> io::Result<()> {
         // courses: Mutex::new(vec![]),
         db: db_pool,
     });
+
+    // INFO level enabled
+    env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
+
     let app = move || {
         let cors = Cors::default()
             .allowed_origin("http://localhost:8080/")
@@ -86,7 +90,7 @@ async fn main() -> io::Result<()> {
 
         App::new()
             .app_data(shared_data.clone())
-            .wrap(middleware::Logger::default())
+            .wrap(middleware::Logger::default().log_target("HAN"))
             .wrap(session)
             .wrap(middleware::DefaultHeaders::new().add(("X-Version","1.0")))
             .app_data(web::JsonConfig::default().limit(4096).error_handler(|_err,_req|{
@@ -103,7 +107,7 @@ async fn main() -> io::Result<()> {
     };
 
     HttpServer::new(app).bind("0.0.0.0:3000")?.run().await?;
-    println!("async web server start ...");
+    println!("async web server down ...");
 
     Ok(())
 }

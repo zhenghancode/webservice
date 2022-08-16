@@ -9,6 +9,7 @@ default-run = "teacher-service"
 [dependencies]
 actix-session ={version = "0.7.1",features = ["cookie-session","redis-rs-session"]}
 log = "0.4.17"
+env_logger ="0.9.0"
 lazy_static = "1.4.0"
 actix-cors = "0.6.1"
 actix-web = "4.0.1"
