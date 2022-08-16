@@ -1,6 +1,7 @@
 use actix_web::{error, http::StatusCode, HttpResponse};
 use serde::Serialize;
 use sqlx::error::Error as SQLxError;
+use log::{warn};
 use std::fmt;
 
 #[derive(Debug,Serialize)]
@@ -22,23 +23,23 @@ impl MyError {
     fn error_response(&self) -> String {
         match self {
             MyError::DBError(msg) => {
-                log::error!("Database error occurred: {msg}");
+                warn!("Database error occurred: {msg}");
                 "Database error".into()
             },
             MyError::ActixError(msg) => {
-                log::error!("Server error occurred: {msg}");
+                warn!("Server error occurred: {msg}");
                 "Internal server error".into()
             },
             MyError::NotFound(msg) => {
-                log::error!("Not found error occurred: {msg}");
+                warn!("Not found error occurred: {msg}");
                 msg.into()
             },
             MyError::InvalidInput(msg) => {
-                log::error!("invalid parameters received: {msg}");
+                warn!("invalid parameters received: {msg}");
                 msg.into()
             },
             MyError::Unauthored(msg) => {
-                log::error!("unauthor error occurred: {msg}");
+                warn!("unauthor error occurred: {msg}");
                 "authorition error".into()
             },
         }

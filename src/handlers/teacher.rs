@@ -1,21 +1,20 @@
 use actix_web::{web,HttpResponse,get,post,put,delete};
-use actix_identity::Identity;
+use actix_session::Session;
 use crate::dbaccess::teacher::*;
 use crate::models::teacher::{CreateTeacher, UpdateTeacher};
 use crate::state::AppState;
 use crate::errors::MyError;
+use crate::utils::judge_auth;
 
 
 #[post("/")]
 pub async fn post_new_teacher(
     new_teacher: web::Json<CreateTeacher>,
     app_state: web::Data<AppState>,
-    id:Identity,
+    session: Session,
 ) -> Result<HttpResponse,MyError> {
 
-    if let None = id.identity() {
-        return Err(MyError::Unauthored("not user login".into()));
-    };
+    judge_auth(&session, &app_state.auth_key).await?;
 
     post_new_teacher_db(&app_state.db, new_teacher.into())
         .await
@@ -25,12 +24,10 @@ pub async fn post_new_teacher(
 #[get("/")]
 pub async fn get_all_teachers(
     app_state: web::Data<AppState>,
-    id:Identity,
+    session: Session,
 ) -> Result<HttpResponse,MyError> {
 
-    if let None = id.identity() {
-        return Err(MyError::Unauthored("not user login".into()));
-    };
+    judge_auth(&session, &app_state.auth_key).await?;
 
     get_all_teachers_db(&app_state.db)
         .await
@@ -41,12 +38,10 @@ pub async fn get_all_teachers(
 pub async fn get_teacher_details(
     app_state: web::Data<AppState>,
     params: web::Path<i32>,
-    id:Identity,
+    session: Session,
 ) -> Result<HttpResponse,MyError> {
 
-    if let None = id.identity() {
-        return Err(MyError::Unauthored("not user login".into()));
-    };
+    judge_auth(&session, &app_state.auth_key).await?;
 
     let teacher_id = params.into_inner();
 
@@ -60,12 +55,10 @@ pub async fn get_teacher_details(
 pub async fn delete_teacher(
     app_state: web::Data<AppState>,
     params: web::Path<i32>,
-    id: Identity,
+    session: Session,
 ) -> Result<HttpResponse,MyError> {
 
-    if let None = id.identity() {
-        return Err(MyError::Unauthored("not user login".into()));
-    };
+    judge_auth(&session, &app_state.auth_key).await?;
 
     let teacher_id = params.into_inner();
 
@@ -80,12 +73,10 @@ pub async fn update_teacher_details(
     app_state: web::Data<AppState>,
     params: web::Path<i32>,
     update_teacher: web::Json<UpdateTeacher>,
-    id: Identity,
+    session: Session,
 ) -> Result<HttpResponse,MyError> {
 
-    if let None = id.identity() {
-        return Err(MyError::Unauthored("not user login".into()));
-    };
+    judge_auth(&session, &app_state.auth_key).await?;
 
     let teacher_id = params.into_inner();
 

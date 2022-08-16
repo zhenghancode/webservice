@@ -1,20 +1,21 @@
 use crate::state::AppState;
 use actix_web::{web,HttpResponse,get,post,delete,put};
-use actix_identity::Identity;
+use actix_session::Session;
 use crate::dbaccess::course::*;
 use crate::errors::MyError;
-use crate::models::course::{ UpdateCourse, CreateCourse};
+use crate::models::{
+    course::{ UpdateCourse, CreateCourse}
+};
+use crate::utils::judge_auth;
 
 #[post("/")]
 pub async fn post_new_course(
     new_course: web::Json<CreateCourse>,
     app_state: web::Data<AppState>,
-    id: Identity,
+    session: Session,
 ) -> Result<HttpResponse, MyError> {
 
-    if let None = id.identity() {
-        return Err(MyError::Unauthored("not user login".into()));
-    };
+    judge_auth(&session, &app_state.auth_key).await?;
 
     post_new_course_db(&app_state.db, new_course.try_into()?)
         .await
@@ -26,12 +27,10 @@ pub async fn post_new_course(
 pub async fn get_courses_for_teacher(
     app_state: web::Data<AppState>,
     params: web::Path<i32>,
-    id: Identity,
+    session: Session,
 ) -> Result<HttpResponse,MyError> {
 
-    if let None = id.identity() {
-        return Err(MyError::Unauthored("not user login".into()));
-    };
+    judge_auth(&session, &app_state.auth_key).await?;
 
     // let  teacher_id = i32::try_from(params.0).unwrap();
     let teacher_id = params.into_inner();
@@ -45,12 +44,10 @@ pub async fn get_courses_for_teacher(
 pub async fn get_course_detail(
     app_state: web::Data<AppState>,
     params: web::Path<(i32,i32)>,
-    id: Identity,
+    session: Session,
 ) -> Result<HttpResponse,MyError> {
 
-    if let None = id.identity() {
-        return Err(MyError::Unauthored("not user login".into()));
-    };
+    judge_auth(&session, &app_state.auth_key).await?;
 
     // let  teacher_id = i32::try_from(params.0).unwrap();
     // let  course_id = i32::try_from(params.1).unwrap();
@@ -65,12 +62,10 @@ pub async fn get_course_detail(
 pub async fn delete_course(
     app_state: web::Data<AppState>,
     params: web::Path<(i32,i32)>,
-    id:Identity,
+    session: Session,
 ) ->Result<HttpResponse,MyError> {
 
-    if let None = id.identity() {
-        return Err(MyError::Unauthored("not user login".into()));
-    };
+    judge_auth(&session, &app_state.auth_key).await?;
 
     let (teacher_id,course_id) = params.into_inner();
 
@@ -85,12 +80,10 @@ pub async fn update_course_details(
     update_course: web::Json<UpdateCourse>,
     app_state: web::Data<AppState>,
     params: web::Path<(i32,i32)>,
-    id: Identity,
+    session: Session,
 ) -> Result<HttpResponse,MyError> {
 
-    if let None = id.identity() {
-        return Err(MyError::Unauthored("not user login".into()));
-    };
+    judge_auth(&session, &app_state.auth_key).await?;
 
     let (teacher_id,course_id) = params.into_inner();
 

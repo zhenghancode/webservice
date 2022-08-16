@@ -10,11 +10,12 @@ pub async fn post_new_user_db(
     let row = sqlx::query_as!(
         User,
         r#"insert into "user"
-    (user_name,pwd)
-        values($1,$2)
+    (user_name,pwd,phone)
+        values($1,$2,$3)
         RETURNING *"#,
         new_user.user_name,
         new_user.pwd,
+        new_user.phone,
     )
     .fetch_one(pool)
     .await?;
@@ -26,15 +27,18 @@ pub async fn update_user_pwd_db(
     pool: &PgPool,
     user_name: &str,
     pwd: &str,
+    phone: &str,
 ) -> Result<User,MyError> {
 
     let user = sqlx::query_as!(
         User,
         r#"update "user" set
-        pwd=$1 
-        where user_name=$2
+        pwd=$1,
+        phone=$2 
+        where user_name=$3
         RETURNING *"#,
         pwd,
+        phone,
         user_name,
     ).fetch_one(pool)
     .await?;
@@ -68,7 +72,7 @@ pub async fn user_login_db(
 }
 
 
-pub async fn user_logout_db(
+pub async fn user_delete_db(
     pool: &PgPool,
     user_id: i32,
 ) -> Result<String,MyError> {

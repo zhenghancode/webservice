@@ -9,6 +9,7 @@ pub struct User {
     pub user_name: String,
     pub pwd: String,
     pub register_time: NaiveDateTime,
+    pub phone: String,
 }
 
 
@@ -17,6 +18,7 @@ pub struct User {
 pub struct CreateUser {
     pub user_name: String,
     pub pwd: String,
+    pub phone: String,
 }
 
 
@@ -25,19 +27,24 @@ impl From<web::Json<CreateUser>> for CreateUser {
         CreateUser {
             user_name: user.user_name.clone(),
             pwd: user.pwd.clone(),
+            phone: user.phone.clone(),
         }
     }
 }
 
 #[derive(Deserialize,Debug,Clone)]
 pub struct UpdateUser {
+    pub user_name: String,
     pub pwd:Option<String>,
+    pub phone: Option<String>
 }
 
 impl From<web::Json<UpdateUser>> for UpdateUser {
     fn from(user: web::Json<UpdateUser>) -> Self {
         UpdateUser {
+            user_name: user.user_name.clone(),
             pwd: user.pwd.clone(),
+            phone: user.phone.clone(),
         }
     }
 }

@@ -1,24 +1,20 @@
-use actix_web::{web,HttpResponse,post,put,get};
-use actix_identity::Identity;
+use actix_web::{web,HttpResponse,post,put,get,delete};
+use actix_session::Session;
 use crate::state::AppState;
 use crate::errors::MyError;
-use crate::models::auth::{CreateUser, UpdateUser, Login, User,};
+use crate::models::auth::{CreateUser, UpdateUser, Login};
 use crate::dbaccess::auth::*;
-
+use crate::utils::judge_auth;
 
 #[post("/register")]
 pub async fn post_new_user(
     app_state: web::Data<AppState>,
-    id: Identity,
     create_user: web::Json<CreateUser>,
 ) -> Result<HttpResponse,MyError> {
 
     post_new_user_db(&app_state.db, create_user.into())
         .await
         .map(|user| {
-            id.remember(
-                serde_json::to_string(&user).expect("json serialize error")
-            );
             HttpResponse::Ok().json(user)
         })
 }
@@ -28,26 +24,32 @@ pub async fn post_new_user(
 #[put("/resetpwd")]
 pub async fn update_user_pwd(
     app_state: web::Data<AppState>,
-    id: Identity,
+    session: Session,
     update_user: web::Json<UpdateUser>,
 ) -> Result<HttpResponse,MyError> {
 
-    let user:User = match id.identity() {
-        Some(s) => serde_json::from_str(&s)
-            .map_err(|err| MyError::InvalidInput(err.to_string()))?,
-        None => return Err(MyError::Unauthored("not user login".into())),
-    };
+    let user = judge_auth(&session, &app_state.auth_key).await?;
+
+    if user.user_name != update_user.user_name {
+        return Err(MyError::Unauthored("user error".into()))
+    }
 
     let pwd = match &update_user.pwd {
         Some(pwd) => pwd,
         None => &user.pwd,
     };
 
-    update_user_pwd_db(&app_state.db, &user.user_name,pwd)
+    let phone = match &update_user.phone {
+        Some(phone) => phone,
+        None => &user.phone,
+    };
+
+    update_user_pwd_db(&app_state.db, &user.user_name,pwd,phone)
         .await
         .map(|user| {
-            id.forget();
-            id.remember(serde_json::to_string(&user).expect("json serialize error"));
+            session.insert(&user.user_name, &user)
+                .expect("session insert error");
+            session.renew();
             HttpResponse::Ok().json(user)
         })
 
@@ -57,13 +59,13 @@ pub async fn update_user_pwd(
 #[post("/login")]
 pub async fn user_login(
     app_state: web::Data<AppState>,
-    id: Identity,
+    session: Session,
     login: web::Json<Login>
 ) -> Result<HttpResponse,MyError> {
 
-    if let Some(_s) = id.identity()  {
-        return Err(MyError::InvalidInput("please dont login again".into()));
-    };
+    if let Ok(_s) = judge_auth(&session, &app_state.auth_key).await {
+        return Err(MyError::Unauthored("dont login again".into()));
+    }
 
     let user_name = match &login.user_name {
         Some(user_name) => user_name,
@@ -78,7 +80,8 @@ pub async fn user_login(
     user_login_db(&app_state.db, user_name, pwd)
         .await
         .map(|user| {
-            id.remember(serde_json::to_string(&user).expect("json serialize error"));
+            session.insert(&app_state.auth_key, &user)
+                .expect("session insert error");
             HttpResponse::Ok().json(user)
         })
 }
@@ -87,17 +90,31 @@ pub async fn user_login(
 #[get("/logout")]
 pub async fn user_logout(
     app_state: web::Data<AppState>,
-    id: Identity,
+    session: Session,
 ) -> Result<HttpResponse,MyError> {
-    let user:User = match id.identity() {
-        Some(s) => serde_json::from_str(&s).map_err(|err| MyError::InvalidInput(err.to_string()))?,
-        None => return Err(MyError::Unauthored("not logining".into())),
-    };
+    let user = judge_auth(&session, &app_state.auth_key).await?;
 
-    user_logout_db(&app_state.db, user.id)
-        .await
-        .map(|msg| {
-            id.forget();
-            HttpResponse::Ok().json(msg)
-        })
+    session.remove(&app_state.auth_key);
+    Ok(HttpResponse::Ok().json(user))
+}
+
+
+#[delete("/user/{user_name}")]
+pub async fn user_delete(
+    app_state: web::Data<AppState>,
+    session: Session,
+    params: web::Path<(String,)>,
+) -> Result<HttpResponse,MyError> {
+    let user = judge_auth(&session, &app_state.auth_key).await?;
+
+    let (user_name,) = params.into_inner();
+
+    if user.user_name != user_name || user.user_name != "admin" {
+        return Err(MyError::Unauthored("just admin can delete user".into()));
+    }
+
+    user_delete_db(&app_state.db, user.id)
+        .await?;
+    
+    Ok(HttpResponse::Ok().json(user))
 }
