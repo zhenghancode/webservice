@@ -1,7 +1,7 @@
 FROM centos:latest
 
 ENV DATABASE_URL=postgres://postgres:ZH123as456@172.29.111.218:5432/zh
-ENV DOMAIN=zhenghan.icu
+ENV REDIS_URL=redis://:ZH123as456@han2:32263
 
 WORKDIR /app
 
