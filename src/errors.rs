@@ -1,6 +1,7 @@
 use actix_web::{error, http::StatusCode, HttpResponse};
 use serde::Serialize;
 use sqlx::error::Error as SQLxError;
+use log::{warn};
 use std::fmt;
 
 #[derive(Debug,Serialize)]
@@ -8,6 +9,8 @@ pub enum MyError {
     DBError(String),
     ActixError(String),
     NotFound(String),
+    InvalidInput(String),
+    Unauthored(String),
 }
 
 #[derive(Debug,Serialize)]
@@ -20,17 +23,25 @@ impl MyError {
     fn error_response(&self) -> String {
         match self {
             MyError::DBError(msg) => {
-                println!("Database error occurred: {msg}");
+                warn!("Database error occurred: {msg}");
                 "Database error".into()
             },
             MyError::ActixError(msg) => {
-                println!("Server error occurred: {msg}");
+                warn!("Server error occurred: {msg}");
                 "Internal server error".into()
             },
             MyError::NotFound(msg) => {
-                println!("Not found error occurred: {msg}");
+                warn!("Not found error occurred: {msg}");
                 msg.into()
-            }
+            },
+            MyError::InvalidInput(msg) => {
+                warn!("invalid parameters received: {msg}");
+                msg.into()
+            },
+            MyError::Unauthored(msg) => {
+                warn!("unauthor error occurred: {msg}");
+                "authorition error".into()
+            },
         }
     }
 }
@@ -40,6 +51,8 @@ impl error::ResponseError for MyError {
         match self {
             MyError::DBError(_) | MyError::ActixError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             MyError::NotFound(_) => StatusCode::NOT_FOUND,
+            MyError::InvalidInput(_) => StatusCode::BAD_REQUEST,
+            MyError::Unauthored(_) => StatusCode::UNAUTHORIZED,
         }
     }
 
@@ -62,8 +75,8 @@ impl From<SQLxError> for MyError {
     }
 }
 
-impl From<actix_web::error::Error> for MyError {
-    fn from(err: actix_web::error::Error) -> Self {
+impl From<error::Error> for MyError {
+    fn from(err: error::Error) -> Self {
         MyError::ActixError(err.to_string())
     }
 }

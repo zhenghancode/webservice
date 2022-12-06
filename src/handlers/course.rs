@@ -1,26 +1,37 @@
 use crate::state::AppState;
-use actix_web::{web,HttpResponse};
+use actix_web::{web,HttpResponse,get,post,delete,put};
+use actix_session::Session;
 use crate::dbaccess::course::*;
 use crate::errors::MyError;
-use crate::models::course::{ UpdateCourse, CreateCourse};
-// use chrono::Utc;
+use crate::models::{
+    course::{ UpdateCourse, CreateCourse}
+};
+use crate::utils::judge_auth;
 
+#[post("/")]
 pub async fn post_new_course(
     new_course: web::Json<CreateCourse>,
     app_state: web::Data<AppState>,
+    session: Session,
 ) -> Result<HttpResponse, MyError> {
-    println!("Received new course!");
-    
+
+    judge_auth(&session, &app_state.auth_key).await?;
+
     post_new_course_db(&app_state.db, new_course.try_into()?)
         .await
         .map(|course|HttpResponse::Ok().json(course))
     
 }
 
+#[get("/{teacher_id}")]
 pub async fn get_courses_for_teacher(
     app_state: web::Data<AppState>,
     params: web::Path<i32>,
+    session: Session,
 ) -> Result<HttpResponse,MyError> {
+
+    judge_auth(&session, &app_state.auth_key).await?;
+
     // let  teacher_id = i32::try_from(params.0).unwrap();
     let teacher_id = params.into_inner();
     
@@ -29,10 +40,15 @@ pub async fn get_courses_for_teacher(
         .map(| courses| HttpResponse::Ok().json(courses))
 }
 
+#[get("/{teacher_id}/{course_id}")]
 pub async fn get_course_detail(
     app_state: web::Data<AppState>,
-    params: web::Path<(i32,i32)>
+    params: web::Path<(i32,i32)>,
+    session: Session,
 ) -> Result<HttpResponse,MyError> {
+
+    judge_auth(&session, &app_state.auth_key).await?;
+
     // let  teacher_id = i32::try_from(params.0).unwrap();
     // let  course_id = i32::try_from(params.1).unwrap();
     let (teacher_id,course_id) = params.into_inner();
@@ -42,10 +58,15 @@ pub async fn get_course_detail(
         .map(|course| HttpResponse::Ok().json(course))
 }
 
+#[delete("/{teacher_id}/{course_id}")]
 pub async fn delete_course(
     app_state: web::Data<AppState>,
     params: web::Path<(i32,i32)>,
+    session: Session,
 ) ->Result<HttpResponse,MyError> {
+
+    judge_auth(&session, &app_state.auth_key).await?;
+
     let (teacher_id,course_id) = params.into_inner();
 
     delete_course_db(&app_state.db, teacher_id, course_id)
@@ -54,11 +75,16 @@ pub async fn delete_course(
 }
 
 
+#[put("/{teacher_id}/{course_id}")]
 pub async fn update_course_details(
     update_course: web::Json<UpdateCourse>,
     app_state: web::Data<AppState>,
     params: web::Path<(i32,i32)>,
+    session: Session,
 ) -> Result<HttpResponse,MyError> {
+
+    judge_auth(&session, &app_state.auth_key).await?;
+
     let (teacher_id,course_id) = params.into_inner();
 
     update_course_details_db(&app_state.db, teacher_id, course_id, update_course.into())
@@ -67,7 +93,7 @@ pub async fn update_course_details(
 }
 
 
-#[cfg(test)]
+/* #[cfg(test)]
 mod tests {
     use super::*;
     use actix_web::http::StatusCode;
@@ -249,4 +275,4 @@ mod tests {
 
 
 
-}
+} */
