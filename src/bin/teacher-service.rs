@@ -18,25 +18,11 @@ use dotenv::dotenv;
 use std::env;
 use sqlx::postgres::PgPoolOptions;
 
-#[path ="../errors.rs"]
-mod errors;
-#[path ="../dbaccess/mod.rs"]
-mod dbaccess;
-#[path = "../handlers/mod.rs"]
-mod handlers;
-#[path = "../routers.rs"]
-mod routers;
-#[path = "../state.rs"]
-mod state;
-#[path ="../models/mod.rs"]
-mod models;
-#[path ="../utils.rs"]
-mod utils;
 
-use routers::*;
-use state::AppState;
-use errors::MyError;
-use utils::SECRET_KEY;
+use webservice::routers::*;
+use webservice::state::AppState;
+use webservice::errors::MyError;
+use webservice::utils::SECRET_KEY;
 
 
 #[actix_rt::main]
